@@ -24,7 +24,7 @@ int width = 6;					 // Spacing
 
 int main(int argc, char *argv[])
 {
-	fprintf(stdout, "Initialize flags and variables.\n");
+	//fprintf(stdout, "Initialize flags and variables.\n");
 	
 	FILE *fpntr = NULL;			   	 // Pointer
 	char *PATTERN = argv[1]; 	     // String we are attempting to match with our search.
@@ -35,92 +35,113 @@ int main(int argc, char *argv[])
 	int nflag = 0;					 // Track n-param usage
 	
 	int index;
-	int file_index_offset = 2;
-	printf("Program Logic Begins.\n");
+	int file_index_offset = 1;
+	//printf("Program Logic Begins.\n");
 	
 	if(argc > 2)
 	{
-		// Parse parameters.
-		while(strncmp(argv[index], "-",1) == 0)
+		// Parse the entire command.
+		for(index = 2; index < argc; index++)
 		{
-			// Parse long commands.
-			if(strncmp(argv[index][1], "-",1) == 0)
+			//printf("Inside the for-loop\n");
+			
+			// Look at parameters preceeded by a double hypen (--).
+			if(strncmp(argv[index], "--", 2) == 0)
 			{
-				if(strncmp(argv[index], "--line-number", 11) == 0)
-						nflag = 1; 
-					
-				else if(strncmp(argv[index], "--ignore-case", 11) == 0)
+				//printf("Inside the -- conditional\n");
+				
+				if(strncmp(argv[index], "--line-number", 13) == 0)
+					nflag = 1; 
+				
+				else if(strncmp(argv[index], "--ignore-case", 13) == 0)
 					iflag = 1;
 				
-				else if(strncmp(argv[index], "--invert-match", 12) == 0)
+				else if(strncmp(argv[index], "--invert-match", 14) == 0)
 					vflag = 1;
-			}
-			
-			// Case: -n[vi] or -n[iv]
-			if(argv[index][1] == 'n')
-			{
-				nflag = 1;
-				int i;
 				
-				for(i = 2; i < strlen(argv[index]); i++)
+				// Usage error.
+				else
 				{
-					if(argv[index][i] == 'v')
-						vflag = 1;
-					
-					else if(argv[index][i] == 'i')
-						iflag = 1;
+					eflag = 1;
+					fprintf(stderr, "Proper usage of the program is mygrep \"STRING\" [FILENAME]\n");
+					exit(EXIT_FAILURE);
 				}
 			}
 			
-			// Case: -v[ni] or -v[in]
-			else if(argv[index][1] == 'v')
+			// Look at parameters preceeded by a hypen (-).
+			else if(strncmp(argv[index], "-", 1) == 0)
 			{
-				vflag = 1;
-				int i;
+				//printf("Inside the - conditional\n");
 				
-				for(i = 2; i < strlen(argv[index]); i++)
+				// Case: -n[vi] or -n[iv]
+				if(argv[index][1] == 'n')
 				{
-					if(argv[index][i] == 'n')
-						nflag = 1;
+					nflag = 1;
+					int i;
 					
-					else if(argv[index][i] == 'i')
-						iflag = 1;
+					for(i = 2; i < strlen(argv[index]); i++)
+					{
+						if(argv[index][i] == 'v')
+							vflag = 1;
+						
+						else if(argv[index][i] == 'i')
+							iflag = 1;
+					}
 				}
-			}
-			
-			// Case: -i[nv] or -i[vn]
-			else if(argv[index][1] == 'i')
-			{
-				iflag = 1;
-				int i;
 				
-				for(i = 2; i < strlen(argv[index]); i++)
+				// Case: -v[ni] or -v[in]
+				else if(argv[index][1] == 'v')
 				{
-					if(argv[index][i] == 'n')
-						nflag = 1;
+					vflag = 1;
+					int i;
 					
-					else if(argv[index][i] == 'v')
-						vflag = 1;
+					for(i = 2; i < strlen(argv[index]); i++)
+					{
+						if(argv[index][i] == 'n')
+							nflag = 1;
+						
+						else if(argv[index][i] == 'i')
+							iflag = 1;
+					}
 				}
-			}
-			
-			// Usage error.
-			else
-			{
-				eflag = 1;
-				fprintf(stderr, "Proper usage of the program is mygrep \"STRING\" [FILENAME]\n");
-				exit(EXIT_FAILURE);
+				
+				// Case: -i[nv] or -i[vn]
+				else if(argv[index][1] == 'i')
+				{
+					iflag = 1;
+					int i;
+					
+					for(i = 2; i < strlen(argv[index]); i++)
+					{
+						if(argv[index][i] == 'n')
+							nflag = 1;
+						
+						else if(argv[index][i] == 'v')
+							vflag = 1;
+					}
+				}
+				
+				// Usage error.
+				else
+				{
+					eflag = 1;
+					fprintf(stderr, "Proper usage of the program is mygrep \"STRING\" [FILENAME]\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 			
 			file_index_offset++;
 		}
 	}
 	
+	printf("FIO: %d\n", file_index_offset);
+	printf("Argc: %d\n\n", argc);
+	
 	// There are no files.
 	if(file_index_offset == argc)
 	{
 		line_number = 1;
-		printf("Inside the stdin conditional\n");
+		//printf("Inside the stdin conditional\n");
 		fpntr = stdin;										// Pointer to stdin
 		grep_stream(fpntr, PATTERN, iflag, nflag, vflag);	// mygrep the file
 		fclose(fpntr);										// Close the file.
@@ -130,7 +151,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		int i = 0;
-		for(i = file_index_offset; i <= argc; i++)
+		for(i = file_index_offset; i < argc; i++)
 		{
 			FILE_PATH = argv[i];			// Set the file path.
 			line_number = 1;				// Need to reset the line number for each new file.
@@ -193,21 +214,17 @@ char *read_line(FILE *fpntr)
 //returning either 1 for at least one successful match or 0 for none.
 int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag) 
 {
-	printf("Inside the grep_stream \n");
-	printf("iflag: %d\n", iflag);
-	printf("nflag: %d\n", nflag);
-	printf("vflag: %d\n", vflag);
 	int foundString = 0;
 	char *line;
 	
 	//While the file contains data and the next line isn't null (aka end of file).
 	while((line = read_line(fpntr)) != NULL)
 	{
-		printf("Inside the while conditional\n");
+		//printf("Inside the while conditional\n");
 		// There are no parameters.
 		if(iflag + nflag + vflag == 0)
 		{
-			printf("Inside the no params conditional\n");
+			//printf("Inside the no params conditional\n");
 			if(strstr(line, string) != NULL)
 			{
 				fprintf(stdout, "%s\n", line);
@@ -257,9 +274,9 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			// Ignore case and print the line with numbers.
 			if(iflag == 1 && nflag == 1)
 			{
-				if(strcasestr(line, string) == 0)
+				if(strcasestr(line, string) != NULL)
 				{
-					fprintf(stdout, "%*d%s\n", width, line_number, line);
+					fprintf(stdout, "%*d:%s\n", width, line_number, line);
 					foundString++;
 				}
 			}
@@ -267,7 +284,7 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			// Ignore case and print the lines that DO NOT match the pattern.
 			else if(iflag == 1 && vflag == 1)
 			{
-				if(strcasestr(line, string) == 0)
+				if(strcasestr(line, string) != NULL)
 				{
 					fprintf(stdout, "%s\n", line);
 					foundString++;
@@ -279,7 +296,7 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strstr(line, string) == NULL)
 				{
-					fprintf(stdout, "%*d%s\n", width, line_number, line);
+					fprintf(stdout, "%*d:%s\n", width, line_number, line);
 					foundString++;
 				}
 			}
@@ -290,7 +307,7 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 		{
 			//printf("Inside the 3 params conditional\n");
 			
-			if(strcasestr(line, string) == 0)
+			if(strcasestr(line, string) == NULL)
 			{
 				fprintf(stdout, "%*d:%s\n", width, line_number, line);
 				foundString++;
