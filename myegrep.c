@@ -290,7 +290,7 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 		{		
 			if(strcasestr(line, string) == NULL)
 			{
-				if(line != '\n');
+				if(strcmp(line, "\0") != 0)
 				{
 					fprintf(stdout, "%*d:%s\n", width, line_number, line);
 					foundString++;
