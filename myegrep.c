@@ -1,4 +1,5 @@
 // C program mygrep.c
+// Created by Taylor Flatt for CS 306 at SIUC.
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,10 +9,9 @@
 #define MAX_LINE_LENGTH 512
 
 //Prototypes:
-char *read_line(FILE *fpntr);
-int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag);
-int line_number = 1;		 	 // Line number in the file.
-int width = 6;					 // Spacing
+char *get_next_line(FILE *fpntr);
+int grep_stream(FILE *fpntr, char *string, char *file_name, int iflag, int nflag, int vflag);
+int line_number = 0;		 	 // Line number in the file.
 
 int main(int argc, char *argv[])
 {
@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	int vflag = 0;					 // Track v-param usage
 	int iflag = 0;					 // Track i-param usage
 	int nflag = 0;					 // Track n-param usage
-	int file_index_offset = 1;
+	int file_index_offset = 1;		 // Track number of files
 	int index;
 	
 	if(argc < 2)
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 				else
 				{
 					eflag = 1;
-					fprintf(stderr, "Proper usage of the program is mygrep \"STRING\" -[inv] [FILENAME]\n");
+					fprintf(stderr, "1Proper usage of the program is mygrep \"STRING\" -[inv] [FILENAME]\n");
 					exit(EXIT_FAILURE);
 				}
 				
@@ -127,10 +127,10 @@ int main(int argc, char *argv[])
 	// There are no files.
 	if(file_index_offset == argc - 1)
 	{
-		line_number = 1;
-		fpntr = stdin;										// Pointer to stdin
-		grep_stream(fpntr, PATTERN, iflag, nflag, vflag);	// mygrep the file
-		fclose(fpntr);										// Close the file.
+		line_number = 0;
+		fpntr = stdin;										    // Pointer to stdin
+		grep_stream(fpntr, PATTERN, NULL, iflag, nflag, vflag);	// mygrep the file
+		fclose(fpntr);										    // Close the file.
 	}
 	
 	// There is at least one file.
@@ -140,14 +140,20 @@ int main(int argc, char *argv[])
 		for(i = file_index_offset + 1; i < argc; i++)
 		{
 			FILE_PATH = argv[i];			// Set the file path.
-			line_number = 1;				// Need to reset the line number for each new file.
+			line_number = 0;				// Need to reset the line number for each new file.
 			fpntr = fopen(FILE_PATH, "r");  // Open file to read
 			
 			// Make sure the file and pointer are valid.
 			if(fpntr != NULL && FILE_PATH != NULL)
-			{
-				printf("%s's output: \n", FILE_PATH);
-				grep_stream(fpntr, PATTERN, iflag, nflag, vflag);
+			{				
+				// Only one file
+				if(file_index_offset + 2 == argc)
+					grep_stream(fpntr, PATTERN, NULL, iflag, nflag, vflag);
+				
+				// More than one file
+				else
+					grep_stream(fpntr, PATTERN, FILE_PATH, iflag, nflag, vflag);
+				
 				fclose(fpntr);
 			}
 			
@@ -172,7 +178,7 @@ int main(int argc, char *argv[])
 
 //Function to get next line from an open file/stdin.
 //Returns pointer to line buffer.
-char *read_line(FILE *fpntr)
+char *get_next_line(FILE *fpntr)
 {
 	static char line_buff[MAX_LINE_LENGTH];
 	int i = 0;
@@ -199,20 +205,25 @@ char *read_line(FILE *fpntr)
 
 //Parses a character buffer searching for a pattern within that buffer 
 //returning either 1 for at least one successful match or 0 for none.
-int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag) 
+int grep_stream(FILE *fpntr, char *string, char *file_name, int iflag, int nflag, int vflag) 
 {
 	int foundString = 0;
 	char *line;
 	
 	//While the file contains data and the next line isn't null (aka end of file).
-	while((line = read_line(fpntr)) != NULL)
-	{
+	while((line = get_next_line(fpntr)) != NULL)
+	{		
 		// There are no parameters.
 		if(iflag + nflag + vflag == 0)
 		{
 			if(strstr(line, string) != NULL)
 			{
-				fprintf(stdout, "%s\n", line);
+				if(file_name != NULL)
+					fprintf(stdout, "%s:%s\n", file_name, line);
+				
+				else
+					fprintf(stdout, "%s\n", line);
+				
 				foundString++;
 			}
 		}
@@ -225,7 +236,13 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strcasestr(line, string) != NULL)
 				{
-					fprintf(stdout, "%s\n", line);
+					// Need to print the file name (aka more than one file argument).
+					if(file_name != NULL)
+						fprintf(stdout, "%s:%s\n", file_name, line);
+					
+					else
+						fprintf(stdout, "%s\n", line);
+					
 					foundString++;
 				}
 			}
@@ -235,7 +252,12 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strstr(line, string) != NULL)
 				{
-					fprintf(stdout, "%*d:%s\n", width, line_number, line);
+					if(file_name != NULL)
+						fprintf(stdout, "%s:%d:%s\n", file_name , line_number, line);
+					
+					else
+						fprintf(stdout, "%d:%s\n", line_number, line);
+					
 					foundString++;
 				}
 			}
@@ -245,13 +267,19 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strstr(line, string) == NULL)
 				{
-					fprintf(stdout, "%s\n", line);
+					if(file_name != NULL)
+						fprintf(stdout, "%s:%s\n", file_name, line);
+					
+					else
+						fprintf(stdout, "%s\n", line);
+					
 					foundString++;
 				}
 			}
 		}
 	
 		// There are 2 parameters
+		// fprintf(stdout, "%*d:%s\n", width, line_number, line);
 		else if(iflag + nflag + vflag == 2)
 		{
 			// Ignore case and print the line with numbers.
@@ -259,7 +287,12 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strcasestr(line, string) != NULL)
 				{
-					fprintf(stdout, "%*d:%s\n", width, line_number, line);
+					if(file_name != NULL)
+						fprintf(stdout, "%s:%d:%s\n", file_name, line_number, line);
+					
+					else
+						fprintf(stdout, "%d:%s\n", line_number, line);
+					
 					foundString++;
 				}
 			}
@@ -269,7 +302,12 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strcasestr(line, string) != NULL)
 				{
-					fprintf(stdout, "%s\n", line);
+					if(file_name != NULL)
+						fprintf(stdout, "%s:%s\n", file_name, line);
+					
+					else
+						fprintf(stdout, "%s\n", line);
+					
 					foundString++;
 				}
 			}
@@ -279,7 +317,11 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 			{
 				if(strstr(line, string) == NULL)
 				{
-					fprintf(stdout, "%*d:%s\n", width, line_number, line);
+					if(file_name != NULL)
+						fprintf(stdout, "%s:%d:%s\n", file_name, line_number, line);
+					
+					else
+						fprintf(stdout, "%d:%s\n", line_number, line);
 					foundString++;
 				}
 			}
@@ -290,11 +332,12 @@ int grep_stream(FILE *fpntr, char *string, int iflag, int nflag, int vflag)
 		{		
 			if(strcasestr(line, string) == NULL)
 			{
-				if(strcmp(line, "\0") != 0)
-				{
-					fprintf(stdout, "%*d:%s\n", width, line_number, line);
-					foundString++;
-				}
+				if(file_name != NULL)
+					fprintf(stdout, "%s:%d:%s\n", file_name, line_number, line);
+				
+				else
+					fprintf(stdout, "%d:%s\n", line_number, line);
+				foundString++;
 			}
 		}
 	}	
