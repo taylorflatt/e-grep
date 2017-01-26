@@ -1,5 +1,11 @@
-// C program mygrep.c
-// Created by Taylor Flatt for CS 306 at SIUC.
+// Version 1.0
+// Author: Taylor Flatt
+// Custom grep program with three flags.
+//
+// The -t option adds the date to the destination (root) folder if one is created. If a 
+// single file is being backed up, then that file will have the date added to its name.
+//
+// Usage: mygrep "PATTERN" -[inv] [FILENAME]
 
 #include <stdlib.h>
 #include <stdio.h>
